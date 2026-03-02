@@ -147,7 +147,7 @@ const App: React.FC = () => {
                 onDelete={(id) => { db.getTeamMembers().then(fetchInitialData); }} // Fallback if deleteTeamMember is missing
               />
             } />
-            <Route path="/clubs" element={<ClubsView clubs={clubs} user={user} onAddClub={(newClub) => { db.addClub(newClub).then(fetchInitialData); }} onDeleteClub={(id) => { db.deleteClub(id).then(fetchInitialData); }} />} />
+            <Route path="/clubs" element={<ClubsView clubs={clubs} user={user} onAddClub={async (newClub) => { try { await db.addClub(newClub); fetchInitialData(); } catch (e: any) { alert('Failed to save club: ' + (e?.message || e)); } }} onDeleteClub={(id) => { db.deleteClub(id).then(fetchInitialData); }} />} />
             <Route path="/clubs/:clubId" element={
               <ClubDetailView
                 user={user}
