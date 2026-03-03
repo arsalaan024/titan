@@ -197,7 +197,7 @@ const App: React.FC = () => {
             <Route path="/community-chat" element={<CommunityChatView user={user} messages={messages} onSendMessage={(m) => { db.addGlobalChat(m).then(fetchInitialData); }} />} />
             <Route path="/login" element={<LoginView onLogin={fetchInitialData} />} />
             <Route path="/register" element={<RegisterView />} />
-            <Route path="/profile" element={<ProfileView user={user} clubs={clubs} activities={activities} achievements={achievements} posts={studentPosts} />} />
+            <Route path="/profile" element={<ProfileView user={user} clubs={clubs} activities={activities} achievements={achievements} posts={studentPosts} onLogout={handleLogout} />} />
             <Route
               path="/dashboard"
               element={user?.role === UserRoles.SUPER_ADMIN ? <DashboardView /> : <Navigate to="/" />}

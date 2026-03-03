@@ -1,7 +1,7 @@
-
 import React, { useState, useRef } from 'react';
 import { User, Club, Activity, Achievement, AchievementPost } from '../types';
 import { useUser } from '@clerk/clerk-react';
+import { Link } from 'react-router-dom';
 
 interface ProfileViewProps {
     user: User | null;
@@ -9,9 +9,10 @@ interface ProfileViewProps {
     activities: Activity[];
     achievements: Achievement[];
     posts: AchievementPost[];
+    onLogout: () => void;
 }
 
-const ProfileView: React.FC<ProfileViewProps> = ({ user, clubs, activities, achievements, posts }) => {
+const ProfileView: React.FC<ProfileViewProps> = ({ user, clubs, activities, achievements, posts, onLogout }) => {
     const { user: clerkUser } = useUser();
     const [activeTab, setActiveTab] = useState<'overview' | 'clubs' | 'activities' | 'achievements'>('overview');
     const [uploading, setUploading] = useState(false);
@@ -34,10 +35,22 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, clubs, activities, achi
     if (!user) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center py-24">
-                <div className="text-center">
-                    <div className="text-6xl mb-6">🔒</div>
-                    <h2 className="text-3xl font-black text-gray-900 uppercase tracking-tighter mb-3">Access Restricted</h2>
-                    <p className="text-gray-500 font-medium">Please log in to view your profile.</p>
+                <div className="text-center bg-white rounded-[2.5rem] p-14 shadow-xl border border-gray-100 max-w-sm w-full mx-4">
+                    <div className="w-20 h-20 bg-[#800000] rounded-3xl flex items-center justify-center text-white font-black text-4xl mx-auto mb-6 shadow-xl">T</div>
+                    <h2 className="text-2xl font-black text-gray-900 uppercase tracking-tighter mb-2">Welcome to Titan</h2>
+                    <p className="text-gray-400 font-medium mb-8 text-sm">Sign in to view your profile, clubs, and achievements.</p>
+                    <Link
+                        to="/login"
+                        className="block w-full bg-[#800000] text-white font-black py-4 rounded-2xl hover:bg-[#6b0000] transition-all shadow-lg uppercase tracking-widest text-sm text-center"
+                    >
+                        Sign In
+                    </Link>
+                    <Link
+                        to="/register"
+                        className="block w-full mt-3 bg-gray-50 text-gray-700 font-black py-4 rounded-2xl hover:bg-gray-100 transition-all uppercase tracking-widest text-sm text-center border border-gray-100"
+                    >
+                        Create Account
+                    </Link>
                 </div>
             </div>
         );
@@ -111,6 +124,12 @@ const ProfileView: React.FC<ProfileViewProps> = ({ user, clubs, activities, achi
                                 <span className="bg-green-400/20 text-green-300 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-green-400/20">
                                     ● Active
                                 </span>
+                                <button
+                                    onClick={onLogout}
+                                    className="bg-white/10 hover:bg-red-500/30 text-white/80 hover:text-white px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest border border-white/10 transition-all"
+                                >
+                                    Sign Out
+                                </button>
                             </div>
                         </div>
 

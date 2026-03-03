@@ -38,6 +38,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
             </Link>
           </div>
 
+          {/* Desktop nav links */}
           <div className="hidden lg:flex items-center space-x-1">
             {navLinks.map((link) => (
               <Link
@@ -53,23 +54,26 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                 Oversight
               </Link>
             )}
-            {user ? (
-              <div className="ml-4 flex items-center gap-3">
-                <Link to="/profile" className="flex flex-col items-end hover:opacity-80 transition-opacity">
-                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">{user.role}</span>
-                  <span className="text-sm font-medium text-gray-900 hover:text-maroon-800">{user.name}</span>
-                </Link>
-                <Link to="/profile" className="w-9 h-9 bg-maroon-800 rounded-full flex items-center justify-center text-white font-black text-xs hover:bg-maroon-900 transition-colors">
-                  {user.name?.charAt(0)?.toUpperCase()}
-                </Link>
-                <button onClick={onLogout} className="bg-maroon-800 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-maroon-900 transition-colors">Logout</button>
-              </div>
-            ) : (
-              <Link to="/login" className="ml-4 bg-maroon-800 text-white px-6 py-2 rounded-md text-sm font-medium hover:bg-maroon-900 transition-colors shadow-sm">Login</Link>
-            )}
+
+            {/* Profile avatar only — login/logout is on profile page */}
+            <Link
+              to="/profile"
+              className="ml-4 w-9 h-9 bg-maroon-800 rounded-full flex items-center justify-center text-white font-black text-xs hover:bg-maroon-900 transition-colors shadow"
+              title={user ? user.name : 'Login'}
+            >
+              {user ? user.name?.charAt(0)?.toUpperCase() : '?'}
+            </Link>
           </div>
 
-          <div className="lg:hidden flex items-center">
+          {/* Mobile hamburger */}
+          <div className="lg:hidden flex items-center gap-3">
+            {/* Mobile profile icon */}
+            <Link
+              to="/profile"
+              className="w-8 h-8 bg-maroon-800 rounded-full flex items-center justify-center text-white font-black text-xs hover:bg-maroon-900 transition-colors"
+            >
+              {user ? user.name?.charAt(0)?.toUpperCase() : '?'}
+            </Link>
             <button onClick={() => setIsOpen(!isOpen)} className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-maroon-800 hover:bg-gray-100 focus:outline-none">
               <i className={`fa-solid ${isOpen ? 'fa-xmark' : 'fa-bars'} text-xl`}></i>
             </button>
@@ -90,14 +94,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, onLogout }) => {
                 Oversight
               </Link>
             )}
-            {!user ? (
-              <Link to="/login" onClick={() => setIsOpen(false)} className="block px-3 py-2 rounded-md text-base font-medium text-white bg-maroon-800 hover:bg-maroon-900">Login</Link>
-            ) : (
-              <>
-                <Link to="/profile" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/profile') ? 'text-maroon-800 bg-maroon-50' : 'text-gray-600 hover:text-maroon-800 hover:bg-gray-50'}`}>My Profile</Link>
-                <button onClick={() => { onLogout(); setIsOpen(false); }} className="w-full text-left block px-3 py-2 rounded-md text-base font-medium text-white bg-maroon-800 hover:bg-maroon-900">Logout ({user.name})</button>
-              </>
-            )}
+            <Link to="/profile" onClick={() => setIsOpen(false)} className={`block px-3 py-2 rounded-md text-base font-medium ${isActive('/profile') ? 'text-maroon-800 bg-maroon-50' : 'text-gray-600 hover:text-maroon-800 hover:bg-gray-50'}`}>
+              {user ? 'My Profile' : 'Login / Profile'}
+            </Link>
           </div>
         </div>
       )}
