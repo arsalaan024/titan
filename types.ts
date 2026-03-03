@@ -162,3 +162,14 @@ export interface CodingModule {
   description: string;
   problems: CodingProblem[];
 }
+
+// --- Global Settings ---
+
+export type PortalTheme = 'default' | 'diwali' | 'eid' | 'ganpati' | 'festive' | 'dark';
+export type StorageMode = 'google_drive' | 'database';
+
+export interface PortalSettings {
+  id: string;
+  theme: PortalTheme;
+  storageMode: StorageMode;
+}

@@ -1,4 +1,4 @@
-import { UserRole } from '../types';
+import { User, Club, Activity, Achievement, CareerItem, ChatMessage, UserRole, PortalSettings } from '../types';
 import { turso, initSchema } from './tursoClient';
 
 // Initialize schema when the module loads
@@ -268,6 +268,53 @@ export const db = {
       role: r.role
     }));
   },
+
+  // --- Portal Settings ---
+  getPortalSettings: async (): Promise<PortalSettings> => {
+    try {
+      const { rows } = await turso.execute('SELECT * FROM portal_settings WHERE id = \'global\'');
+      if (rows[0]) {
+        const r = rows[0] as any;
+        return {
+          id: r.id,
+          theme: r.theme || 'default',
+          storageMode: (r.storage_mode as any) || 'database'
+        };
+      }
+
+      // Default settings if not found - insert directly to avoid recursion
+      const defaultSettings: PortalSettings = { id: 'global', theme: 'default', storageMode: 'database' };
+      await turso.execute({
+        sql: `INSERT INTO portal_settings (id, theme, storage_mode, updated_at) VALUES ('global', ?, ?, CURRENT_TIMESTAMP)`,
+        args: [defaultSettings.theme, defaultSettings.storageMode]
+      });
+      return defaultSettings;
+    } catch (err) {
+      console.error('Failed to fetch portal settings:', err);
+      return { id: 'global', theme: 'default', storageMode: 'database' };
+    }
+  },
+  updatePortalSettings: async (settings: Partial<PortalSettings>) => {
+    try {
+      // Get current settings first (without calling getPortalSettings to be safe, or just use the Partial)
+      // Since it's ON CONFLICT, we can just update the specific fields provided
+      if (settings.theme) {
+        await turso.execute({
+          sql: `INSERT INTO portal_settings (id, theme, updated_at) VALUES ('global', ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET theme=excluded.theme, updated_at=CURRENT_TIMESTAMP`,
+          args: [settings.theme]
+        });
+      }
+      if (settings.storageMode) {
+        await turso.execute({
+          sql: `INSERT INTO portal_settings (id, theme, storage_mode, updated_at) VALUES ('global', 'default', ?, CURRENT_TIMESTAMP) ON CONFLICT(id) DO UPDATE SET storage_mode=excluded.storage_mode, updated_at=CURRENT_TIMESTAMP`,
+          args: [settings.storageMode]
+        });
+      }
+    } catch (err) {
+      console.error('Failed to update portal settings:', err);
+      throw err;
+    }
+  }
 };
 
 // Remove old setDbToken export (no longer needed)

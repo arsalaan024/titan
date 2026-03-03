@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useSignIn } from '@clerk/clerk-react';
+import { useSignIn, useUser } from '@clerk/clerk-react';
 
 interface LoginViewProps {
   onLogin: () => void;
@@ -10,9 +10,17 @@ interface LoginViewProps {
 const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
   const navigate = useNavigate();
   const { isLoaded, signIn, setActive } = useSignIn();
+  const { user: existingUser } = useUser();
+
+  React.useEffect(() => {
+    if (existingUser) {
+      navigate('/profile');
+    }
+  }, [existingUser, navigate]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -85,15 +93,24 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin }) => {
             <div className="flex items-center justify-between mb-2 px-1">
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest">Password</label>
             </div>
-            <input
-              type="password"
-              className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 font-semibold outline-none focus:ring-0 focus:border-[#800000] text-gray-900 transition-all placeholder-gray-300"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-            />
+            <div className="relative group">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full bg-gray-50 border-2 border-transparent rounded-2xl px-5 py-4 font-semibold outline-none focus:ring-0 focus:border-[#800000] text-gray-900 transition-all placeholder-gray-300 pr-14"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="current-password"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-400 hover:text-[#800000] transition-colors"
+              >
+                <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'}`}></i>
+              </button>
+            </div>
           </div>
 
           <button

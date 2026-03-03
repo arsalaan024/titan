@@ -128,6 +128,12 @@ export async function initSchema() {
       role TEXT DEFAULT 'MEMBER',
       joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
       UNIQUE(club_id, user_id)
+    )`,
+    `CREATE TABLE IF NOT EXISTS portal_settings (
+      id TEXT PRIMARY KEY,
+      theme TEXT DEFAULT 'default',
+      storage_mode TEXT DEFAULT 'database',
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
   ];
 

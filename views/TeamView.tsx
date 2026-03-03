@@ -1,6 +1,6 @@
-
-import React, { useState, useRef } from 'react';
-import { TeamMember, User, UserRoles } from '../types';
+import React, { useState } from 'react';
+import { TeamMember, User, UserRoles, PortalSettings } from '../types';
+import MediaInput from '../components/MediaInput';
 
 interface TeamViewProps {
   members: TeamMember[];
@@ -8,50 +8,17 @@ interface TeamViewProps {
   onAdd?: (member: TeamMember) => void;
   onUpdate?: (member: TeamMember) => void;
   onDelete?: (id: string) => void;
+  portalSettings: PortalSettings | null;
 }
 
-const compressImage = (base64: string, maxWidth = 600, quality = 0.7): Promise<string> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = base64;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = (maxWidth / width) * height;
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(base64);
-      ctx.drawImage(img, 0, 0, width, height);
-      resolve(canvas.toDataURL('image/jpeg', quality));
-    };
-    img.onerror = () => resolve(base64);
-  });
-};
-
-const TeamView: React.FC<TeamViewProps> = ({ members, user, onAdd, onUpdate, onDelete }) => {
+const TeamView: React.FC<TeamViewProps> = ({ members, user, onAdd, onUpdate, onDelete, portalSettings }) => {
   const [showModal, setShowModal] = useState(false);
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null);
   const [memberToDelete, setMemberToDelete] = useState<TeamMember | null>(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [formData, setFormData] = useState<Partial<TeamMember>>({ name: '', role: '', image: '' });
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const isAuthorizedAdmin = user && [UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.CLUB_ADMIN].includes(user.role as UserRoles);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const compressed = await compressImage(reader.result as string);
-      setFormData(prev => ({ ...prev, image: compressed }));
-    };
-    reader.readAsDataURL(file);
-  };
+  const isAuthorizedAdmin = user && [UserRoles.ADMIN, UserRoles.SUPER_ADMIN, UserRoles.CLUB_ADMIN].includes(user.role as UserRoles);
 
   const handleOpenAdd = () => {
     setEditingMember(null);
@@ -125,14 +92,18 @@ const TeamView: React.FC<TeamViewProps> = ({ members, user, onAdd, onUpdate, onD
             <button aria-label="Close modal" onClick={() => setShowModal(false)} className="absolute top-10 right-10 text-gray-300"><i className="fa-solid fa-circle-xmark text-4xl"></i></button>
             <h3 className="text-4xl font-black mb-12 uppercase">{editingMember ? 'Modify Record' : 'Provision Leader'}</h3>
             <div className="space-y-10">
-              <input aria-label="Member name" type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-6 shadow-inner" placeholder="Official Name" />
-              <input aria-label="Member role" type="text" value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})} className="w-full bg-gray-50 border-none rounded-2xl p-6 shadow-inner" placeholder="Designated Role" />
-              <div aria-label="Upload photo" onClick={() => fileInputRef.current?.click()} className="w-full h-72 bg-gray-50 border-2 border-dashed rounded-[1cm] flex items-center justify-center cursor-pointer overflow-hidden">
-                {formData.image ? <img src={formData.image} className="w-full h-full object-cover" alt="Selected portrait" /> : <i className="fa-solid fa-camera text-4xl text-gray-300"></i>}
-              </div>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+              <input aria-label="Member name" type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-gray-50 border-none rounded-2xl p-6 shadow-inner text-lg font-bold" placeholder="Official Name" />
+              <input aria-label="Member role" type="text" value={formData.role} onChange={(e) => setFormData({ ...formData, role: e.target.value })} className="w-full bg-gray-50 border-none rounded-2xl p-6 shadow-inner text-lg font-bold" placeholder="Designated Role" />
+
+              <MediaInput
+                label="Leader Portrait"
+                value={formData.image || ''}
+                onChange={(val) => setFormData({ ...formData, image: val })}
+                storageMode={portalSettings?.storageMode || 'database'}
+                type="image"
+              />
             </div>
-            <button onClick={handleSubmit} className="w-full bg-maroon-800 text-white font-black py-6 rounded-2xl shadow-2xl mt-12">Submit</button>
+            <button onClick={handleSubmit} className="w-full bg-maroon-800 text-white font-black py-6 rounded-2xl shadow-2xl mt-12 uppercase tracking-widest text-xs">Submit</button>
           </div>
         </div>
       )}

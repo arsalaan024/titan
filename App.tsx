@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { User, Club, Activity, Achievement, UserRoles, TeamMember, Announcement, CareerItem, ChatMessage, AchievementPost } from './types';
+import { User, Club, Activity, Achievement, UserRoles, TeamMember, Announcement, CareerItem, ChatMessage, AchievementPost, PortalSettings, UserRole } from './types';
 import { db, setDbToken } from './services/db';
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react';
 
@@ -40,6 +39,7 @@ const App: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [studentPosts, setStudentPosts] = useState<AchievementPost[]>([]);
   const [allUsers, setAllUsers] = useState<User[]>([]);
+  const [portalSettings, setPortalSettings] = useState<PortalSettings | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Sync Token with DB Service
@@ -82,12 +82,14 @@ const App: React.FC = () => {
 
   const fetchInitialData = async () => {
     try {
-      const [c, ann] = await Promise.all([
+      const [c, ann, settings] = await Promise.all([
         db.getClubs(),
-        db.getAnnouncements()
+        db.getAnnouncements(),
+        db.getPortalSettings()
       ]);
       setClubs(c || []);
       setAnnouncements(ann || []);
+      setPortalSettings(settings || null);
       // Load the rest in background
       fetchAdditionalData();
     } catch (err) {
@@ -133,13 +135,13 @@ const App: React.FC = () => {
 
   return (
     <HashRouter>
-      <div className="flex flex-col min-h-screen bg-gray-50">
+      <div className={`min-h-screen bg-gray-50 portal-theme-${portalSettings?.theme || 'default'}`}>
         <Navbar user={user} onLogout={handleLogout} />
 
         <main className="flex-grow pt-16">
           <Routes>
-            <Route path="/" element={<HomeView user={user} announcements={announcements} />} />
-            <Route path="/about" element={<AboutView />} />
+            <Route path="/" element={<HomeView user={user} announcements={announcements} portalSettings={portalSettings} />} />
+            <Route path="/about" element={<AboutView portalSettings={portalSettings} />} />
             <Route path="/team" element={
               <TeamView
                 members={teamMembers}
@@ -147,9 +149,10 @@ const App: React.FC = () => {
                 onAdd={(m) => { db.addTeamMember(m).then(fetchInitialData); }}
                 onUpdate={(m) => { db.updateTeamMember(m).then(fetchInitialData); }}
                 onDelete={(id) => { db.getTeamMembers().then(fetchInitialData); }} // Fallback if deleteTeamMember is missing
+                portalSettings={portalSettings}
               />
             } />
-            <Route path="/clubs" element={<ClubsView clubs={clubs} user={user} onAddClub={async (newClub) => { try { await db.addClub(newClub); fetchInitialData(); } catch (e: any) { alert('Failed to save club: ' + (e?.message || e)); } }} onDeleteClub={(id) => { db.deleteClub(id).then(fetchInitialData); }} />} />
+            <Route path="/clubs" element={<ClubsView clubs={clubs} user={user} onAddClub={async (newClub) => { try { await db.addClub(newClub); fetchInitialData(); } catch (e: any) { alert('Failed to save club: ' + (e?.message || e)); } }} onDeleteClub={(id) => { db.deleteClub(id).then(fetchInitialData); }} portalSettings={portalSettings} />} />
             <Route path="/clubs/:clubId" element={
               <ClubDetailView
                 user={user}
@@ -158,6 +161,7 @@ const App: React.FC = () => {
                 announcements={announcements}
                 onAddAnnouncement={(ann) => { db.addAnnouncement(ann).then(fetchInitialData); }}
                 onUpdate={fetchInitialData}
+                portalSettings={portalSettings}
               />
             } />
             <Route path="/activities" element={
@@ -168,6 +172,7 @@ const App: React.FC = () => {
                 onAdd={(act) => { db.addActivity(act).then(fetchInitialData); }}
                 onUpdate={(act) => { db.updateActivity(act).then(fetchInitialData); }}
                 onDelete={(id) => { db.deleteActivity(id).then(fetchInitialData); }}
+                portalSettings={portalSettings}
               />
             } />
             <Route path="/gallery" element={<GalleryView activities={activities} clubs={clubs} />} />
@@ -184,6 +189,7 @@ const App: React.FC = () => {
                   db.deleteAchievement(id).then(fetchInitialData);
                 }}
                 onRefreshPosts={fetchInitialData}
+                portalSettings={portalSettings}
               />
             } />
             <Route path="/career" element={
@@ -191,14 +197,15 @@ const App: React.FC = () => {
                 user={user}
                 items={careerItems}
                 onAdd={(item) => { db.addCareer(item).then(fetchInitialData); }}
-                onDelete={(id) => { id && db.deleteCareer(id).then(fetchInitialData); }}
+                onDelete={(id) => { db.deleteCareer(id).then(fetchInitialData); }}
+                portalSettings={portalSettings}
               />
             } />
             <Route path="/games" element={<GamesView user={user} onSync={fetchInitialData} />} />
             <Route path="/community-chat" element={<CommunityChatView user={user} messages={messages} onSendMessage={(m) => { db.addGlobalChat(m).then(fetchInitialData); }} />} />
             <Route path="/login" element={<LoginView onLogin={fetchInitialData} />} />
             <Route path="/register" element={<RegisterView />} />
-            <Route path="/profile" element={<ProfileView user={user} clubs={clubs} activities={activities} achievements={achievements} posts={studentPosts} onLogout={handleLogout} />} />
+            <Route path="/profile" element={<ProfileView user={user} clubs={clubs} activities={activities} achievements={achievements} posts={studentPosts} onLogout={handleLogout} portalSettings={portalSettings} onUpdateSettings={fetchInitialData} />} />
             <Route path="/profile/:userId" element={<PublicProfileView clubs={clubs} activities={activities} achievements={achievements} />} />
             <Route
               path="/dashboard"

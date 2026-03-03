@@ -2,11 +2,18 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { UserRole, UserRoles } from '../types';
-import { useSignUp } from '@clerk/clerk-react';
+import { useSignUp, useUser } from '@clerk/clerk-react';
 
 const RegisterView: React.FC = () => {
   const navigate = useNavigate();
   const { isLoaded, signUp, setActive } = useSignUp();
+  const { user: existingUser } = useUser();
+
+  React.useEffect(() => {
+    if (existingUser) {
+      navigate('/profile');
+    }
+  }, [existingUser, navigate]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -18,6 +25,8 @@ const RegisterView: React.FC = () => {
 
   const [verifying, setVerifying] = useState(false);
   const [code, setCode] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showAccessCode, setShowAccessCode] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -31,24 +40,27 @@ const RegisterView: React.FC = () => {
     console.log('--- CLERK ENROLLMENT START ---');
 
     try {
-      if (!formData.name || !formData.email || !formData.password) {
-        throw new Error('Identity fields cannot be empty.');
-      }
-
       const restrictedRoles = [UserRoles.ADMIN, UserRoles.CLUB_ADMIN, UserRoles.CAREER_ADMIN, UserRoles.SUPER_ADMIN];
-      if (restrictedRoles.includes(formData.role as UserRoles) && formData.accessCode !== 'TITAN2025') {
-        throw new Error('Access Code Verification Failed.');
+      const normalizedCode = formData.accessCode.trim();
+      const selectedRole = formData.role;
+
+      console.log('Registration Profile:', { role: selectedRole, email: formData.email.trim() });
+
+      if (restrictedRoles.includes(selectedRole as UserRoles) && normalizedCode !== 'TITAN2025') {
+        console.warn('REGISTRATION BLOCKED: Invalid Access Code for restricted role.');
+        throw new Error('Departmental Authorization Failed. Please verify your Secret Access Code.');
       }
 
       // Start the signup process
       await signUp.create({
-        emailAddress: formData.email,
+        emailAddress: formData.email.trim(),
         password: formData.password,
         unsafeMetadata: {
-          role: formData.role,
-          name: formData.name
+          role: selectedRole,
+          name: formData.name.trim()
         }
       });
+      console.log('Clerk Identity created. Initiating verification...');
 
       // Prepare email verification
       await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
@@ -167,14 +179,23 @@ const RegisterView: React.FC = () => {
 
             <div className="space-y-3">
               <label htmlFor="regPass" className="block text-[10px] font-black text-gray-400 uppercase tracking-[0.4em] px-2">Gateway Password</label>
-              <input
-                id="regPass"
-                type="password"
-                className="w-full bg-gray-50 border-none rounded-[1.5rem] px-8 py-6 font-bold outline-none focus:ring-4 focus:ring-maroon-800/10 text-xl transition-all"
-                placeholder="••••••••"
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              />
+              <div className="relative group">
+                <input
+                  id="regPass"
+                  type={showPassword ? "text" : "password"}
+                  className="w-full bg-gray-50 border-none rounded-[1.5rem] px-8 py-6 font-bold outline-none focus:ring-4 focus:ring-maroon-800/10 text-xl transition-all pr-16"
+                  placeholder="••••••••"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-gray-400 hover:text-maroon-800 transition-colors"
+                >
+                  <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'} text-lg`}></i>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-6">
@@ -183,8 +204,6 @@ const RegisterView: React.FC = () => {
                 {[
                   { r: UserRoles.STUDENT, icon: 'fa-user-graduate', label: 'Student' },
                   { r: UserRoles.ADMIN, icon: 'fa-user-shield', label: 'General Admin' },
-                  { r: UserRoles.CLUB_ADMIN, icon: 'fa-layer-group', label: 'Club Admin' },
-                  { r: UserRoles.CAREER_ADMIN, icon: 'fa-briefcase', label: 'Career Hub' },
                   { r: UserRoles.SUPER_ADMIN, icon: 'fa-crown', label: 'Super Admin' }
                 ].map(({ r, icon, label }) => (
                   <button
@@ -210,14 +229,23 @@ const RegisterView: React.FC = () => {
                   <i className="fa-solid fa-key text-lg"></i>
                   Departmental Secret Authorization Code
                 </label>
-                <input
-                  id="authCode"
-                  type="password"
-                  className="w-full bg-maroon-50 border-2 border-maroon-100 rounded-[1.5rem] px-8 py-6 font-black placeholder-maroon-200 focus:outline-none focus:border-maroon-800 transition-all text-xl"
-                  placeholder="Enter departmental secret code"
-                  value={formData.accessCode}
-                  onChange={(e) => setFormData({ ...formData, accessCode: e.target.value })}
-                />
+                <div className="relative group">
+                  <input
+                    id="authCode"
+                    type={showAccessCode ? "text" : "password"}
+                    className="w-full bg-maroon-50 border-2 border-maroon-100 rounded-[1.5rem] px-8 py-6 font-black placeholder-maroon-200 focus:outline-none focus:border-maroon-800 transition-all text-xl pr-16"
+                    placeholder="Enter departmental secret code"
+                    value={formData.accessCode}
+                    onChange={(e) => setFormData({ ...formData, accessCode: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAccessCode(!showAccessCode)}
+                    className="absolute right-6 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center text-maroon-200 hover:text-maroon-800 transition-colors"
+                  >
+                    <i className={`fa-solid ${showAccessCode ? 'fa-eye-slash' : 'fa-eye'} text-lg`}></i>
+                  </button>
+                </div>
                 <p className="text-[10px] text-maroon-300 font-bold uppercase tracking-widest px-2 italic">Contact Super Admin to obtain your role provision key.</p>
               </div>
             )}

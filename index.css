@@ -1,0 +1,67 @@
+/* Main Design Tokens and Theme Overrides */
+
+:root {
+  --portal-maroon: #800000;
+  --portal-maroon-light: #6b0000;
+  --portal-accent: #800000;
+}
+
+/* Base Utility for Theme Switching */
+body {
+  transition: background-color 0.8s ease, color 0.8s ease;
+}
+
+/* Diwali Theme: Warm, Radiant, Celebration */
+.portal-theme-diwali {
+  --portal-accent: #ff9933;
+  --portal-maroon: #800000;
+  background-color: #fff9f0 !important;
+}
+.portal-theme-diwali .bg-[#800000] { background-color: #ff9933 !important; }
+.portal-theme-diwali .text-maroon-800 { color: #ff9933 !important; }
+.portal-theme-diwali .border-[#800000] { border-color: #ff9933 !important; }
+
+/* Eid Theme: Resplendent Green & Gold */
+.portal-theme-eid {
+  --portal-accent: #006400;
+  --portal-maroon: #004d00;
+  background-color: #f0fff0 !important;
+}
+.portal-theme-eid .bg-[#800000] { background-color: #006400 !important; }
+.portal-theme-eid .text-maroon-800 { color: #006400 !important; }
+.portal-theme-eid .border-[#800000] { border-color: #006400 !important; }
+
+/* Ganpati Theme: Deep Red & Saffron */
+.portal-theme-ganpati {
+  --portal-accent: #e31e24;
+  --portal-maroon: #8b0000;
+  background-color: #fff5f5 !important;
+}
+.portal-theme-ganpati .bg-[#800000] { background-color: #e31e24 !important; }
+.portal-theme-ganpati .text-maroon-800 { color: #e31e24 !important; }
+.portal-theme-ganpati .border-[#800000] { border-color: #e31e24 !important; }
+
+/* Festive Theme: Vibrant Multicolored */
+.portal-theme-festive {
+  --portal-accent: #ff007f;
+  background-color: #fafafa !important;
+}
+.portal-theme-festive .bg-[#800000] { background-color: #ff007f !important; }
+
+/* Dark Theme: Sleek & Professional */
+.portal-theme-dark {
+  background-color: #0a0a0a !important;
+  color: #ffffff !important;
+}
+.portal-theme-dark .bg-white { background-color: #1a1a1a !important; color: white; }
+.portal-theme-dark .text-gray-900 { color: #ffffff !important; }
+.portal-theme-dark .text-gray-600 { color: #a0a0a0 !important; }
+.portal-theme-dark .bg-gray-50 { background-color: #0f0f0f !important; }
+.portal-theme-dark .border-gray-100 { border-color: #222222 !important; }
+
+/* Global Transitions */
+.transition-colors {
+  transition-property: background-color, border-color, color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 500ms;
+}

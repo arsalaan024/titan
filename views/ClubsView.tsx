@@ -1,53 +1,17 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Club, User, UserRoles } from '../types';
+import { Club, User, UserRoles, PortalSettings } from '../types';
+import MediaInput from '../components/MediaInput';
 
 interface ClubsViewProps {
   clubs: Club[];
   user: User | null;
   onAddClub?: (club: Club) => void;
   onDeleteClub?: (id: string) => void;
+  portalSettings: PortalSettings | null;
 }
 
-const MAX_BASE64_BYTES = 150000; // ~150KB hard cap to fit Turso row limits
-
-const compressImage = (base64: string, maxWidth = 800, quality = 0.5): Promise<string> => {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.src = base64;
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      let width = img.width;
-      let height = img.height;
-      if (width > maxWidth) {
-        height = (maxWidth / width) * height;
-        width = maxWidth;
-      }
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return resolve(base64);
-      ctx.drawImage(img, 0, 0, width, height);
-      let result = canvas.toDataURL('image/jpeg', quality);
-      // If still too big, re-compress at lower quality
-      if (result.length > MAX_BASE64_BYTES) {
-        result = canvas.toDataURL('image/jpeg', 0.3);
-      }
-      // If STILL too big, shrink further
-      if (result.length > MAX_BASE64_BYTES) {
-        canvas.width = Math.floor(width * 0.6);
-        canvas.height = Math.floor(height * 0.6);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        result = canvas.toDataURL('image/jpeg', 0.3);
-      }
-      resolve(result);
-    };
-    img.onerror = () => resolve(base64);
-  });
-};
-
-const ClubsView: React.FC<ClubsViewProps> = ({ clubs, user, onAddClub, onDeleteClub }) => {
+const ClubsView: React.FC<ClubsViewProps> = ({ clubs, user, onAddClub, onDeleteClub, portalSettings }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -64,32 +28,12 @@ const ClubsView: React.FC<ClubsViewProps> = ({ clubs, user, onAddClub, onDeleteC
     themeColor: '#800000'
   });
 
-  const logoInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-
   const isAuthorizedAdmin = user && (user.role === UserRoles.ADMIN || user.role === UserRoles.SUPER_ADMIN);
 
   const filteredClubs = clubs.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.tagline.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'bannerImage') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onloadend = async () => {
-      const base64 = reader.result as string;
-      const maxWidth = field === 'logo' ? 300 : 800;
-      const compressed = await compressImage(base64, maxWidth);
-      if (compressed.length > 200000) {
-        alert('Image is too large even after compression. Please use a smaller image (under 500KB).');
-        return;
-      }
-      setFormData(prev => ({ ...prev, [field]: compressed }));
-    };
-    reader.readAsDataURL(file);
-  };
 
   const handleAddSubmit = () => {
     if (!formData.name || !formData.logo || !formData.bannerImage) {
@@ -255,8 +199,8 @@ const ClubsView: React.FC<ClubsViewProps> = ({ clubs, user, onAddClub, onDeleteC
                 disabled={deleteConfirmation.trim() !== clubToDelete.name.trim()}
                 onClick={confirmDelete}
                 className={`flex-grow py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest text-white transition-all ${deleteConfirmation.trim() === clubToDelete.name.trim()
-                    ? 'bg-red-600 hover:bg-red-700 active:scale-95'
-                    : 'bg-red-200 cursor-not-allowed'
+                  ? 'bg-red-600 hover:bg-red-700 active:scale-95'
+                  : 'bg-red-200 cursor-not-allowed'
                   }`}
               >
                 Delete Chapter
@@ -281,30 +225,31 @@ const ClubsView: React.FC<ClubsViewProps> = ({ clubs, user, onAddClub, onDeleteC
                 <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full bg-gray-50 border-none rounded-2xl px-8 py-5 font-bold outline-none focus:ring-4 focus:ring-maroon-800/10 shadow-inner text-lg" placeholder="Official Chapter Name" />
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-2">Brand Identity (Logo)</label>
-                  <button onClick={() => logoInputRef.current?.click()} className="w-full h-32 bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl flex items-center justify-center overflow-hidden hover:bg-maroon-50 transition-all">
-                    {formData.logo ? <img src={formData.logo} className="w-full h-full object-contain p-4" alt="Logo" /> : <i className="fa-solid fa-image text-gray-200 text-3xl"></i>}
-                  </button>
-                  <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'logo')} />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <MediaInput
+                  label="Chapter Logo"
+                  value={formData.logo || ''}
+                  onChange={(val) => setFormData({ ...formData, logo: val })}
+                  storageMode={portalSettings?.storageMode || 'database'}
+                  placeholder="Paste URL or upload logo"
+                />
+
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-2">Primary Color Profile</label>
-                  <div className="w-full h-32 bg-gray-50 border-2 border-gray-100 rounded-3xl flex items-center justify-center p-3 relative overflow-hidden">
+                  <div className="w-full h-[58px] bg-gray-50 border-2 border-gray-100 rounded-2xl flex items-center justify-center p-3 relative overflow-hidden">
                     <input type="color" value={formData.themeColor} onChange={(e) => setFormData({ ...formData, themeColor: e.target.value })} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    <div className="w-full h-full rounded-2xl shadow-inner border border-white/20" style={{ backgroundColor: formData.themeColor }}></div>
+                    <div className="w-full h-full rounded-xl shadow-inner border border-white/20" style={{ backgroundColor: formData.themeColor }}></div>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-2">Visual Hero Manifest (Banner)</label>
-                <button onClick={() => bannerInputRef.current?.click()} className="w-full h-40 bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl flex items-center justify-center overflow-hidden hover:bg-maroon-50 transition-all">
-                  {formData.bannerImage ? <img src={formData.bannerImage} className="w-full h-full object-cover" alt="Banner" /> : <i className="fa-solid fa-panorama text-gray-200 text-4xl"></i>}
-                </button>
-                <input ref={bannerInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e, 'bannerImage')} />
-              </div>
+              <MediaInput
+                label="Strategic Banner (Hero)"
+                value={formData.bannerImage || ''}
+                onChange={(val) => setFormData({ ...formData, bannerImage: val })}
+                storageMode={portalSettings?.storageMode || 'database'}
+                placeholder="Paste URL or upload banner"
+              />
 
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-2">Chapter Strategic Description</label>
